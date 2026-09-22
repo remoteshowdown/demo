@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remote Team Showdown</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --red: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    
+    /* Top Bar & Timer */
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 18px 24px; border-radius: 12px; border: 1px solid #334155; }
+    .title-box h1 { font-size: 1.4rem; font-weight: 700; color: #fff; }
+    .title-box p { font-size: 0.85rem; color: var(--text-muted); }
+    
+    .timer-container { display: flex; align-items: center; gap: 12px; }
+    .timer-display { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 60px; text-align: center; color: var(--cyan); }
+    .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.15s; font-size: 0.85rem; }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #334155; }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Scoreboard */
+    .scoreboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .team-card { background: var(--card-bg); padding: 16px; border-radius: 10px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .team-name { font-weight: 600; font-size: 1rem; }
+    .score-controls { display: flex; align-items: center; gap: 10px; }
+    .score-value { font-size: 1.5rem; font-weight: 700; min-width: 32px; text-align: center; color: var(--cyan); }
+    .btn-score { width: 28px; height: 28px; border-radius: 6px; border: none; color: white; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .plus { background: var(--green); }
+    .minus { background: var(--red); }
+
+    /* Round Tabs */
+    .tabs { display: flex; gap: 8px; border-bottom: 2px solid #334155; padding-bottom: 8px; }
+    .tab-btn { background: transparent; color: var(--text-muted); border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { background: #334155; color: white; }
+
+    /* Round Content Area */
+    .content-area { background: var(--card-bg); border: 1px solid #334155; border-radius: 12px; padding: 24px; min-height: 380px; }
+    .panel { display: none; flex-direction: column; gap: 16px; }
+    .panel.active { display: flex; }
+
+    /* Trivia Questions */
+    .trivia-card { background: #0f172a; padding: 18px; border-radius: 8px; border: 1px solid #334155; }
+    .trivia-q { font-weight: 600; font-size: 1rem; margin-bottom: 12px; }
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .opt-btn { background: #1e293b; border: 1px solid #334155; color: var(--text); padding: 10px 14px; border-radius: 6px; text-align: left; cursor: pointer; font-size: 0.9rem; }
+    .opt-btn:hover { border-color: var(--cyan); }
+    .opt-btn.correct { background: rgba(16, 185, 129, 0.2); border-color: var(--green); color: var(--green); }
+    .opt-btn.wrong { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
+
+    /* Hot Takes & Blitz Cards */
+    .debate-card { background: #0f172a; padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 12px; }
+    .debate-topic { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+    .debate-desc { font-size: 0.9rem; color: var(--text-muted); }
+    .reveal-box { margin-top: 10px; padding: 10px; background: #1e293b; border-radius: 6px; display: none; font-size: 0.9rem; color: var(--cyan); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header & Live Timer -->
+  <header>
+    <div class="title-box">
+      <h1>Remote Team Showdown</h1>
+      <p>Sprint Retrospective & Team Sync Game Engine</p>
+    </div>
+    <div class="timer-container">
+      <div class="timer-display" id="timer">15</div>
+      <button class="btn" onclick="startTimer()">Start</button>
+      <button class="btn btn-secondary" onclick="pauseTimer()">Pause</button>
+      <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+    </div>
+  </header>
+
+  <!-- Live Team Scoreboard -->
+  <section class="scoreboard">
+    <div class="team-card">
+      <span class="team-name">Team Alpha</span>
+      <div class="score-controls">
+        <button class="btn-score minus" onclick="modScore('alpha', -1)">-</button>
+        <span class="score-value" id="score-alpha">0</span>
+        <button class="btn-score plus" onclick="modScore('alpha', 1)">+</button>
+      </div>
+    </div>
+    <div class="team-card">
+      <span class="team-name">Team Beta</span>
+      <div class="score-controls">
+        <button class="btn-score minus" onclick="modScore('beta', -1)">-</button>
+        <span class="score-value" id="score-beta">0</span>
+        <button class="btn-score plus" onclick="modScore('beta', 1)">+</button>
+      </div>
+    </div>
+    <div class="team-card">
+      <span class="team-name">Team Gamma</span>
+      <div class="score-controls">
+        <button class="btn-score minus" onclick="modScore('gamma', -1)">-</button>
+        <span class="score-value" id="score-gamma">0</span>
+        <button class="btn-score plus" onclick="modScore('gamma', 1)">+</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(0)">Round 1: Tech Trivia</button>
+    <button class="tab-btn" onclick="switchTab(1)">Round 2: Hot Takes Debate</button>
+    <button class="tab-btn" onclick="switchTab(2)">Round 3: Buzzer Blitz</button>
+  </div>
+
+  <!-- Content Arena -->
+  <main class="content-area">
+    <!-- Panel 1: Tech Trivia -->
+    <div class="panel active" id="panel-0">
+      <div class="trivia-card">
+        <div class="trivia-q">1. In JavaScript, what does `typeof NaN` evaluate to?</div>
+        <div class="options-grid">
+          <button class="opt-btn" onclick="checkAnswer(this, false)">"undefined"</button>
+          <button class="opt-btn" onclick="checkAnswer(this, true)">"number"</button>
+          <button class="opt-btn" onclick="checkAnswer(this, false)">"nan"</button>
+          <button class="opt-btn" onclick="checkAnswer(this, false)">"object"</button>
+        </div>
+      </div>
+      <div class="trivia-card">
+        <div class="trivia-q">2. Which HTTP status code officially represents "I'm a teapot"?</div>
+        <div class="options-grid">
+          <button class="opt-btn" onclick="checkAnswer(this, false)">402 Payment Required</button>
+          <button class="opt-btn" onclick="checkAnswer(this, false)">429 Too Many Requests</button>
+          <button class="opt-btn" onclick="checkAnswer(this, true)">418 I'm a teapot</button>
+          <button class="opt-btn" onclick="checkAnswer(this, false)">451 Unavailable For Legal Reasons</button>
+        </div>
+      </div>
+      <div class="trivia-card">
+        <div class="trivia-q">3. What year was Git initially released by Linus Torvalds?</div>
+        <div class="options-grid">
+          <button class="opt-btn" onclick="checkAnswer(this, false)">2001</button>
+          <button class="opt-btn" onclick="checkAnswer(this, true)">2005</button>
+          <button class="opt-btn" onclick="checkAnswer(this, false)">2008</button>
+          <button class="opt-btn" onclick="checkAnswer(this, false)">1998</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Hot Takes -->
+    <div class="panel" id="panel-1">
+      <div class="debate-card">
+        <div class="debate-topic">Take #1: Daily standups should strictly be written in Slack, never on a call.</div>
+        <div class="debate-desc">Teams have 60 seconds to argue: Does live standup build camaraderie or waste engineering focus?</div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-topic">Take #2: Code comments are an apology for unreadable architecture.</div>
+        <div class="debate-desc">Clean self-documenting code vs. reality of complex business logic handovers.</div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-topic">Take #3: Pull requests over 300 lines should be automatically closed without review.</div>
+        <div class="debate-desc">Debate atomic micro-PRs vs. the overhead of managing 10 small branch merges.</div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Buzzer Blitz -->
+    <div class="panel" id="panel-2">
+      <div class="debate-card">
+        <div class="debate-topic">Challenge 1: The Infinite Loop Riddle</div>
+        <div class="debate-desc">"I am executed immediately, consume zero CPU cycles when idle, but crash your stack when recursive without an exit. What am I?"</div>
+        <button class="btn btn-secondary" style="margin-top: 10px;" onclick="toggleReveal('ans-1')">Reveal Answer</button>
+        <div class="reveal-box" id="ans-1">Answer: A recursive base-case violation / Call Stack overflow.</div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-topic">Challenge 2: Acronym Quickfire</div>
+        <div class="debate-desc">First team to buzz in with the correct definition of all 5 letters in SOLID wins 3 points.</div>
+        <button class="btn btn-secondary" style="margin-top: 10px;" onclick="toggleReveal('ans-2')">Reveal Answer</button>
+        <div class="reveal-box" id="ans-2">Single responsibility, Open-closed, Liskov substitution, Interface segregation, Dependency inversion.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- Native Web Audio API Sound Generator ---
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playChime() {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function playBuzzer() {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(130, audioCtx.currentTime); // Low buzz
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    }
+
+    // --- Scoreboard Engine ---
+    const scores = { alpha: 0, beta: 0, gamma: 0 };
+    function modScore(team, val) {
+      scores[team] = Math.max(0, scores[team] + val);
+      document.getElementById(`score-${team}`).innerText = scores[team];
+      if (val > 0) playChime();
+    }
+
+    // --- 15-Second Host Timer ---
+    let timerVal = 15;
+    let timerId = null;
+    function startTimer() {
+      initAudio();
+      if (timerId) return;
+      timerId = setInterval(() => {
+        timerVal--;
+        document.getElementById('timer').innerText = timerVal;
+        if (timerVal <= 0) {
+          clearInterval(timerId);
+          timerId = null;
+          playBuzzer();
+        }
+      }, 1000);
+    }
+    function pauseTimer() { clearInterval(timerId); timerId = null; }
+    function resetTimer() { pauseTimer(); timerVal = 15; document.getElementById('timer').innerText = '15'; }
+
+    // --- Navigation Tabs ---
+    function switchTab(index) {
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
+      document.querySelectorAll('.panel').forEach((panel, i) => panel.classList.toggle('active', i === index));
+    }
+
+    // --- Trivia Interaction ---
+    function checkAnswer(btn, isCorrect) {
+      const parent = btn.closest('.options-grid');
+      if (parent.dataset.answered) return;
+      parent.dataset.answered = "true";
+      if (isCorrect) {
+        btn.classList.add('correct');
+        playChime();
+      } else {
+        btn.classList.add('wrong');
+        playBuzzer();
+      }
+    }
+
+    // --- Answer Reveal Toggle ---
+    function toggleReveal(id) {
+      const el = document.getElementById(id);
+      el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+  </script>
+</body>
+</html>
